@@ -1,0 +1,23 @@
+version: 2.1
+
+workflows:
+  build-ortools:
+    jobs:
+      - build
+
+jobs:
+  build:
+    docker:
+      - image: gcc:8
+    steps:
+      - run:
+          command: |
+            apt-get update && apt-get -y install libgeos-dev
+
+            wget https://github.com/google/or-tools/archive/v7.1.zip
+            unzip v7.1.zip
+
+            cd or-tools-7.1
+            make third_party
+            make cc
+            
