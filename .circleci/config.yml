@@ -43,7 +43,7 @@ jobs:
             
             # Preparing artifact
             export DST=/tmp/artifact/ortools-cppyy
-            mkdir -p /tmp/artifact/include/ortools ${DST}/lib
+            mkdir -p ${DST}/include/ortools ${DST}/lib
             cp -pr lib/libortools.so libOrtoolsPypyDict.so ortools_pypy.rootmap ortools_pypy_rdict.pcm dependencies/install/lib/* ${DST}/lib
             cp -pr ortools/{constraint_solver,util,base} ${DST}/include/ortools/
             cp -pr ortools/gen/ortools/constraint_solver/* ${DST}/include/ortools/constraint_solver/
