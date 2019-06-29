@@ -11,19 +11,31 @@ jobs:
       - image: gcc:8
     steps:
       - checkout
+      - restore_cache:
+          name: Restore build dir
+          key: build-dir
       - run:
           command: |
             apt-get update && apt-get -y install libgeos-dev cmake python-pip
+
             # Needed for genreflex
             pip install cppyy
 
-            wget https://github.com/google/or-tools/archive/v7.1.zip
-            unzip v7.1.zip
+            if [ ! -d or-tools-7.1 ]; then
+              wget https://github.com/google/or-tools/archive/v7.1.zip
+              unzip v7.1.zip
+            fi
 
             cd or-tools-7.1
             make third_party
             make cc
-
+      - save_cache:
+          name: Save build-dir
+          key: build-dir
+          paths:
+            - or-tools-7.1
+      - run:
+          command: |
             # Building headers for cppyy
             genreflex ortools/constraint_solver/constraint_solver.h --cxxflags -Idependencies/sources/abseil-cpp-bf29470/ -I ortools/gen/ -Idependencies/install/include/ -o ortools_pypy.cpp -s ../selection.xml --rootmap=ortools_pypy.rootmap --rootmap-lib=libOrtoolsPypyDict.so
             g++ -std=c++11 -fPIC -rdynamic -O2 -shared `genreflex --cppflags` ortools_pypy.cpp -o libOrtoolsPypyDict.so  -Idependencies/sources/abseil-cpp-bf29470/ -I ortools/gen/ -Idependencies/install/include -I. -L ./lib -lortools -L/or-tools-7.1/lib -L/usr/local/site-packages/cppyy_backend/lib/ -lCling && \
