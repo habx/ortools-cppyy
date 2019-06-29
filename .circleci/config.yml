@@ -12,7 +12,9 @@ jobs:
     steps:
       - run:
           command: |
-            apt-get update && apt-get -y install libgeos-dev cmake
+            apt-get update && apt-get -y install libgeos-dev cmake python-pip
+            # Needed for genreflex
+            pip install cppyy
 
             wget https://github.com/google/or-tools/archive/v7.1.zip
             unzip v7.1.zip
@@ -20,4 +22,18 @@ jobs:
             cd or-tools-7.1
             make third_party
             make cc
+
+            # Building headers for cppyy
+            genreflex ortools/constraint_solver/constraint_solver.h --cxxflags -Idependencies/sources/abseil-cpp-bf29470/ -I ortools/gen/ -Idependencies/install/include/ -o ortools_pypy.cpp -s selection.xml --rootmap=ortools_pypy.rootmap --rootmap-lib=libOrtoolsPypyDict.so
+            g++ -std=c++11 -fPIC -rdynamic -O2 -shared `genreflex --cppflags` ortools_pypy.cpp -o libOrtoolsPypyDict.so  -Idependencies/sources/abseil-cpp-bf29470/ -I ortools/gen/ -Idependencies/install/include -I. -L ./lib -lortools -L/or-tools-7.1/lib -L/usr/local/site-packages/cppyy_backend/lib/ -lCling && \
             
+            # Preparing artifact
+            export DST=/tmp/artifact
+            mkdir -p /tmp/artifact/include/ortools ${DST}/lib
+            cp lib/libortools.so libOrtoolsPypyDict.so ortools_pypy.rootmap ortools_pypy_rdict.pcm dependencies/install/lib/* ${DST}/lib
+            cp -pr ortools/{constraint_solver,util,base} ${DST}/include/ortools/
+            cp ortools/gen/ortools/constraint_solver/* ${DST}/include/ortools/constraint_solver/
+            tar cvzf /tmp/ortools-cppyy.tar.gz /tmp/artifact/*
+
+      - store_artifacts:
+          path: /tmp/ortools-cppyy.tar.gz
