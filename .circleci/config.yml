@@ -4,6 +4,10 @@ workflows:
   build-ortools:
     jobs:
       - build
+      - store-on-s3:
+          context: default_env_vars
+          requires:
+          - build-src
 
 jobs:
   build:
@@ -50,5 +54,18 @@ jobs:
             cp -pr ortools/gen/ortools/constraint_solver/* ${DST}/include/ortools/constraint_solver/
             cd ${DST}/.. ; tar cvzf /tmp/ortools-cppyy.tar.gz ortools-cppyy/*
 
-      - store_artifacts:
-          path: /tmp/ortools-cppyy.tar.gz
+      - persist_to_workspace:
+          root: /tmp
+          paths:
+            - ortools-cppyy.tar.gz
+
+  store-on-s3:
+    docker:
+      - image: mesosphere/aws-cli
+    steps:
+      - attach_workspace:
+          at: /tmp/
+      - run:
+          command: |
+            apk add --no-cache ca-certificates
+            aws s3 cp  --cache-control "public, max-age=31536000" --acl public-read /tmp/ortools-cppyy.tar.gz s3:///habx-artifacts/
