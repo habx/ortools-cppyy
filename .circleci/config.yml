@@ -7,7 +7,7 @@ workflows:
       - store-on-s3:
           context: default_env_vars
           requires:
-          - build-src
+          - build
 
 jobs:
   build:
